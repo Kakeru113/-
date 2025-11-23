@@ -1,0 +1,485 @@
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>海外旅行 おすすめの国 診断</title>
+    <!-- Tailwind CSS CDNを読み込み -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* カスタムスタイル */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb;
+        }
+        .quiz-card {
+            background-color: white;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 0 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        .option-button {
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .option-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .selected-option {
+            border-color: #3b82f6; /* blue-500 */
+            background-color: #eff6ff; /* blue-50 */
+            transform: scale(1.02);
+        }
+        .progress-bar {
+            height: 8px;
+            background-color: #bfdbfe; /* blue-200 */
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background-color: #3b82f6; /* blue-500 */
+            transition: width 0.4s ease-in-out;
+        }
+        .rank-1 {
+            border-color: #f59e0b; /* amber-500 */
+            background-color: #fffbeb; /* amber-50 */
+        }
+        .rank-2 {
+            border-color: #9ca3af; /* gray-400 */
+            background-color: #f3f4f6; /* gray-100 */
+        }
+    </style>
+</head>
+<body>
+
+    <div id="app" class="min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-8">
+        <div class="quiz-card w-full max-w-lg mx-auto rounded-xl p-6 sm:p-10">
+
+            <header class="mb-8 text-center">
+                <h1 class="text-3xl font-extrabold text-gray-900 mb-2">海外旅行 おすすめの国 診断 (こども向け)</h1>
+                <p class="text-gray-500">全部で6つの質問に答えて、あなたにピッタリの旅行先を見つけましょう！</p>
+            </header>
+
+            <!-- プログレスバー -->
+            <div class="mb-8">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+                </div>
+                <p id="progress-text" class="text-sm text-gray-500 mt-2 text-right"></p>
+            </div>
+
+            <!-- クイズコンテンツ -->
+            <div id="quiz-container">
+                <!-- 質問/結果がここにレンダリングされます -->
+            </div>
+
+            <!-- ナビゲーションボタン -->
+            <div id="navigation-buttons" class="mt-8 flex justify-between">
+                <button id="prev-button" onclick="app.prevStep()" class="px-6 py-3 bg-gray-200 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-300 transition duration-150 ease-in-out disabled:opacity-50" disabled>
+                    &larr; 戻る
+                </button>
+                <button id="next-button" onclick="app.nextStep()" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-lg shadow-blue-500/50 hover:bg-blue-700 transition duration-150 ease-in-out disabled:opacity-50" disabled>
+                    次へ &rarr;
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            // --- 診断データ ---
+            questions: [
+                {
+                    id: 1,
+                    text: "旅行先で楽しみたいのはどれですか？",
+                    options: [
+                        { text: "いろいろな国のおいしい食べ物やB級グルメをたくさん食べる！", score: { budget: 1, near: 1, history: 1 } },
+                        { text: "遊園地や動物園など、楽しい体験やアクティビティを重視！", score: { budget: 2, nature: 1, city: 1 } },
+                        { text: "ちょっと高価なお土産や、きれいなホテルでのんびり過ごす！", score: { budget: 3, luxury: 1, history: 1, nature: 1, city: 1 } },
+                        { text: "きれいな海やプールで泳いだり、のんびり日光浴したりする！", score: { nature: 2, luxury: 1, safety: 1, near: 1 } }, 
+                    ]
+                },
+                {
+                    id: 2,
+                    text: "どのくらいのお休みで行く予定ですか？",
+                    options: [
+                        { text: "短い連休 (3〜5日くらいで、あまり遠くない場所がいい)", score: { duration: 1, near: 1, city: 1 } },
+                        { text: "少し長めのお休み (6〜9日くらいで、色々な場所を回りたい)", score: { duration: 2, city: 1, nature: 1, history: 1 } },
+                        { text: "長い夏休みや冬休み (10日以上かけて、遠い国にも行ってみたい)", score: { duration: 3, far: 1, history: 1, nature: 1 } },
+                        { text: "移動時間は気にしないので、とても遠い国にぜひ行ってみたい！", score: { duration: 3, far: 3, history: 1, nature: 1 } }, 
+                    ]
+                },
+                {
+                    id: 3,
+                    text: "最も興味のあるアクティビティは何ですか？",
+                    options: [
+                        { text: "都会の観光、ショッピング、グルメ", score: { city: 3, near: 1 } },
+                        { text: "大自然、絶景、アウトドアアクティビティ", score: { nature: 3, duration: 1 } },
+                        { text: "歴史的建造物、美術館、異文化体験", score: { history: 3, far: 1 } },
+                        { text: "スポーツ観戦や、その国で流行っているカルチャー（音楽など）に触れたい！", score: { city: 2, future: 1, luxury: 1 } }, 
+                    ]
+                },
+                {
+                    id: 4,
+                    text: "旅先で重視する要素は何ですか？",
+                    options: [
+                        // 質問文を「治安」から「安全」と具体的な安心感に修正
+                        { text: "安全がいちばん大事！こわいことが起きないか心配せず、安心して過ごしたい。", score: { safety: 3, duration: 1, city: 1 } },
+                        { text: "日本からの移動時間（フライト時間）が短いこと", score: { near: 3, city: 1 } },
+                        { text: "写真映えする絶景スポットが多いこと", score: { nature: 2, luxury: 1, history: 1 } }, 
+                        { text: "買い物や食事など、お金があまりかからないこと", score: { budget: 3, near: 1, history: 1 } }, 
+                    ]
+                },
+                {
+                    id: 5,
+                    text: "現地でどんな食事を楽しみたいですか？",
+                    options: [
+                        { text: "安くて美味しい屋台飯やB級グルメ", score: { budget: 1, near: 1, history: 1 } },
+                        { text: "多国籍料理や洗練されたミシュラン級の料理", score: { luxury: 2, city: 1, far: 1 } }, 
+                        { text: "ローカルな食材を使った素朴でヘルシーな料理", score: { nature: 1, safety: 1, duration: 1 } }, 
+                        { text: "世界的に有名なスイーツやデザートを味わいたい！", score: { luxury: 1, city: 1, fantasy: 2 } }, 
+                    ]
+                },
+                // 新しい質問 (Q6): テーマを追加
+                {
+                    id: 6,
+                    text: "あなたの興味がある旅のテーマは何ですか？",
+                    options: [
+                        { text: "かわいい動物たち（コアラ、カンガルーなど）に会いたい！", score: { animal: 3, nature: 1 } },
+                        { text: "お城や魔法の世界、物語に出てくるような場所に行きたい！", score: { fantasy: 3, history: 1 } },
+                        { text: "未来的な建物や、宇宙・科学技術に関係する施設が見たい！", score: { future: 3, city: 1, luxury: 1 } },
+                        { text: "砂漠や極地など、日本では経験できない珍しい自然や風景を見たい！", score: { nature: 3, far: 2, history: 1 } }, 
+                    ]
+                }
+            ],
+
+            // --- 状態管理 ---
+            currentStep: 0, 
+            answers: [],    
+            totalSteps: 6, 
+            
+            // --- 初期化処理 ---
+            init() {
+                this.totalSteps = this.questions.length;
+                this.renderStep();
+            },
+
+            // --- UIレンダリング ---
+            renderStep() {
+                const container = document.getElementById('quiz-container');
+                const navButtons = document.getElementById('navigation-buttons');
+                const progressFill = document.getElementById('progress-fill');
+                const progressText = document.getElementById('progress-text');
+                const prevButton = document.getElementById('prev-button');
+                const nextButton = document.getElementById('next-button');
+
+                // プログレスバーの更新
+                const percentage = (this.currentStep / this.totalSteps) * 100;
+                progressFill.style.width = `${percentage}%`;
+                progressText.textContent = `質問 ${Math.min(this.currentStep + 1, this.totalSteps)} / ${this.totalSteps}`;
+
+                // 質問ステップ
+                if (this.currentStep < this.totalSteps) {
+                    const question = this.questions[this.currentStep];
+                    const currentAnswer = this.answers[this.currentStep];
+
+                    // 質問と選択肢のHTML生成
+                    container.innerHTML = `
+                        <div class="question-title mb-6">
+                            <h2 class="text-xl font-bold text-gray-800">${question.id}. ${question.text}</h2>
+                        </div>
+                        <div class="space-y-4">
+                            ${question.options.map((option, index) => `
+                                <div id="option-${index}"
+                                     class="option-button p-4 border-2 border-gray-200 rounded-lg text-gray-700
+                                            ${currentAnswer === index ? 'selected-option' : ''}"
+                                     onclick="app.selectOption(${index})">
+                                    ${option.text}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+
+                    // ボタンの状態更新
+                    prevButton.disabled = this.currentStep === 0;
+                    if (this.currentStep === this.totalSteps - 1) {
+                         nextButton.textContent = '結果を見る！';
+                    } else {
+                         nextButton.textContent = '次へ &rarr;';
+                    }
+                    nextButton.disabled = currentAnswer === undefined;
+                }
+                // 結果ステップ
+                else {
+                    container.innerHTML = this.renderResult();
+                    navButtons.style.display = 'none'; // ナビゲーションボタンを非表示
+                }
+            },
+
+            // --- 選択肢の処理 ---
+            selectOption(index) {
+                this.answers[this.currentStep] = index;
+                this.renderStep(); // UIを再レンダリングして選択状態を反映させる
+            },
+
+            // --- ステップ移動 ---
+            nextStep() {
+                if (this.answers[this.currentStep] !== undefined) {
+                    this.currentStep++;
+                    this.renderStep();
+                }
+            },
+
+            prevStep() {
+                if (this.currentStep > 0) {
+                    this.currentStep--;
+                    this.renderStep();
+                }
+            },
+
+            // --- 結果計算ロジック ---
+            calculateResult() {
+                // スコア項目の定義
+                const totalScore = {
+                    budget: 0, duration: 0, city: 0, nature: 0, history: 0, 
+                    safety: 0, near: 0, luxury: 0, far: 0, animal: 0, 
+                    fantasy: 0, future: 0
+                };
+
+                // スコア集計
+                this.answers.forEach((optionIndex, questionIndex) => {
+                    const question = this.questions[questionIndex];
+                    if (question && question.options[optionIndex]) {
+                        const option = question.options[optionIndex];
+                        for (const key in option.score) {
+                            totalScore[key] += option.score[key];
+                        }
+                    }
+                });
+
+                // ロジックに基づいた推奨国の設定 (約35カ国をカバー)
+                let recommendations = [];
+                // 選択肢が増えたが、強い傾向（4つ以上の質問で該当要素を選択）の判定基準は4で維持
+                const maxCity = totalScore.city >= 4;
+                const maxNature = totalScore.nature >= 4;
+                const maxHistory = totalScore.history >= 4;
+                const lowBudget = totalScore.budget >= 4; // 予算重視の回答が増えたため判定を上げる
+                const midToLongDuration = totalScore.duration >= 2;
+                const nearEast = totalScore.near >= 4;
+                const farWest = totalScore.far >= 3; // 遠方への回答が増えたため判定を上げる
+
+                // --- アジア・オセアニア (近場〜中距離、約12カ国) ---
+                if (nearEast && maxCity) {
+                    recommendations.push({ name: "韓国 (ソウル)", reason: "K-POPとショッピング、韓国コスメや美味しい屋台グルメが楽しい！" });
+                    recommendations.push({ name: "台湾 (台北)", reason: "夜市グルメと安全な街、ジブリのような風景やユニークな寺院を見に行こう！" });
+                }
+                if (nearEast && totalScore.luxury >= 2) { // 贅沢傾向の回答が増加
+                    recommendations.push({ name: "香港", reason: "巨大な高層ビル群の夜景と、テーマパーク、そして飲茶グルメが魅力！" });
+                    recommendations.push({ name: "マカオ", reason: "ヨーロッパのような歴史的建造物と、豪華なリゾート体験ができる場所です。" });
+                }
+                if (lowBudget && midToLongDuration) {
+                    recommendations.push({ name: "タイ (バンコク、プーケット)", reason: "ゾウなどの動物と触れ合えるかも！きれいなビーチと歴史的な寺院も見てみよう。" });
+                    recommendations.push({ name: "ベトナム (ハノイ、ホーチミン)", reason: "独特な景色（ハロン湾など）や、美味しい米の麺（フォー）などの食文化を体験できます。" });
+                }
+                if (totalScore.future >= 3 && totalScore.safety >= 3) {
+                    // 安全性の表現を調整
+                    recommendations.push({ name: "シンガポール", reason: "未来みたいな建物（マリーナベイサンズ）や大きな動物園、安心して過ごせるきれいな都市が魅力！" });
+                }
+                if (totalScore.nature >= 3 && totalScore.luxury >= 1) {
+                    recommendations.push({ name: "インドネシア (バリ島)", reason: "神々の島と呼ばれる美しいビーチと自然。リゾートでゆったり過ごそう。" });
+                }
+                 if (totalScore.animal >= 3 && maxNature) {
+                    recommendations.push({ name: "オーストラリア (シドニー、ゴールドコースト)", reason: "コアラやカンガルー、ウォンバットなど、珍しい動物たちに会える国です！" });
+                    recommendations.push({ name: "ニュージーランド", reason: "映画の舞台になったような、とても美しい大自然の中を探検しよう。" });
+                }
+                if (totalScore.near >= 2 && totalScore.history >= 2) {
+                     recommendations.push({ name: "カンボジア (アンコールワット)", reason: "壮大な古代遺跡アンコールワットを見て、歴史の大きさを感じよう。" });
+                }
+                 if (totalScore.near >= 2 && totalScore.city >= 1) {
+                     recommendations.push({ name: "マレーシア (クアラルンプール)", reason: "多文化が混ざった活気ある街。ペトロナスツインタワーは必見！" });
+                }
+
+                // --- ヨーロッパ (遠距離、約13カ国) ---
+                if (farWest && maxHistory && totalScore.luxury >= 2) {
+                    recommendations.push({ name: "イタリア (ローマ、フィレンツェ)", reason: "古い遺跡や絵画がたくさん！本場のジェラートやパスタを食べに行こう。" });
+                    recommendations.push({ name: "フランス (パリ)", reason: "エッフェル塔や豪華な宮殿、おいしいパンや芸術作品が待っています。" });
+                    recommendations.push({ name: "イギリス (ロンドン)", reason: "魔法の物語に出てくるような場所や、歴史的なお城、かわいい二階建てバスがあります。" });
+                }
+                if (totalScore.fantasy >= 3) {
+                    recommendations.push({ name: "ドイツ", reason: "ノイシュヴァンシュタイン城など、おとぎ話に出てくるようなお城がたくさん！" });
+                    recommendations.push({ name: "オーストリア (ウィーン)", reason: "音楽と芸術の都。きれいな宮殿や、馬車に乗って王様気分を味わおう！" });
+                }
+                if (maxNature && totalScore.safety >= 3) {
+                    recommendations.push({ name: "スイス", reason: "美しいアルプスの山々、湖、そして美味しいチーズとチョコレートが有名です。" });
+                    recommendations.push({ name: "北欧 (スウェーデン、ノルウェー)", reason: "きれいな自然と、寒い国ならではのオーロラや北欧デザインに触れよう。" });
+                }
+                if (maxHistory && totalScore.nature >= 2) {
+                    recommendations.push({ name: "ギリシャ", reason: "青と白のきれいな海と、昔の神様たちが作ったような白い建物を見に行こう。" });
+                    recommendations.push({ name: "スペイン", reason: "サグラダ・ファミリアなど、面白い形をした建物と、情熱的なダンスを見に行こう！" });
+                }
+                if (farWest && maxCity) {
+                    recommendations.push({ name: "オランダ (アムステルダム)", reason: "風車とチューリップ、運河が美しい国。自転車で街を回るのが楽しい！" });
+                    recommendations.push({ name: "ベルギー", reason: "世界一美味しいワッフルとチョコレート、そしてかわいい街並みが魅力！" });
+                    recommendations.push({ name: "チェコ (プラハ)", reason: "中世のお城や石畳の道など、おとぎ話のような景色が広がる美しい街。" });
+                }
+                 if (maxHistory && lowBudget) {
+                    recommendations.push({ name: "ポルトガル", reason: "カラフルな街並みと、大航海時代の古いお城や港を見に行こう。" });
+                }
+
+                // --- 北米・中南米・中東・アフリカ (超遠距離・特殊、約10カ国) ---
+                if (farWest && (maxCity || maxNature)) {
+                    recommendations.push({ name: "アメリカ (西海岸：LA, NY)", reason: "世界で一番大きなテーマパークや、映画のセットみたいな街、大きな自然で遊ぼう！" });
+                    recommendations.push({ name: "カナダ (バンクーバー、ロッキー)", reason: "雄大な山や湖、運が良ければクマなどの大きな動物にも出会えるかも。" });
+                }
+                if (totalScore.safety >= 3 && totalScore.nature >= 2 && totalScore.luxury >= 1) {
+                    // 安全性の表現を調整
+                    recommendations.push({ name: "ハワイ (オアフ島)", reason: "一年中あたたかく、心配なく海での遊びやショッピングが楽しめます。" });
+                }
+                if (totalScore.future >= 3 && totalScore.luxury >= 3) {
+                    recommendations.push({ name: "アラブ首長国連邦 (ドバイ)", reason: "世界一高いビルや、室内スキー場など、お金持ちで未来的な街を体験！" });
+                    recommendations.push({ name: "カタール", reason: "砂漠の中の新しい未来都市！博物館や近未来的な建物を見に行こう。" });
+                }
+                if (totalScore.history >= 3 && totalScore.far >= 3) {
+                    recommendations.push({ name: "エジプト", reason: "大きなピラミッドや、昔の王様の宝物を見に行こう。まるで冒険家になった気分！" });
+                    recommendations.push({ name: "ペルー (マチュピチュ)", reason: "雲の上の古代都市マチュピチュ！歴史と自然が作り出した神秘的な場所。" });
+                }
+                if (maxHistory && totalScore.nature >= 2 && totalScore.far >= 2) {
+                    recommendations.push({ name: "メキシコ (カンクン、メキシコシティ)", reason: "マヤ文明のピラミッドなどの古代遺跡と、きれいなビーチで遊ぶリゾート体験。" });
+                }
+                if (totalScore.animal >= 2 && totalScore.far >= 3) {
+                     recommendations.push({ name: "南アフリカ", reason: "サファリでライオンやキリンなどの野生動物を見に行こう！大迫力の自然体験です。" });
+                }
+                if (totalScore.nature >= 3 && totalScore.far >= 3) {
+                     recommendations.push({ name: "ブラジル", reason: "世界一大きな森（アマゾン）や、大きなキリスト像のあるリオデジャネイロを探検！" });
+                }
+                if (totalScore.animal >= 3 && totalScore.nature >= 3) {
+                    recommendations.push({ name: "ガラパゴス諸島（エクアドル）", reason: "ダーウィンが研究した珍しい動物がたくさんいる、自然の宝島！" });
+                }
+
+                
+                // --- 結果の整理と選定 ---
+                
+                // 1. ユニークなリストを作成 (重複排除)
+                const uniqueRecommendations = [];
+                const nameSet = new Set();
+
+                for (const rec of recommendations) {
+                    if (!nameSet.has(rec.name)) {
+                        nameSet.add(rec.name);
+                        uniqueRecommendations.push(rec);
+                    }
+                }
+                
+                // 2. 最終調整とデフォルト
+                if (uniqueRecommendations.length === 0) {
+                     // どのスコアにも強く当てはまらなかった場合のデフォルトを返します
+                     return [
+                        // 安全性の表現を調整
+                        { name: "ハワイ (オアフ島)", reason: "海がとってもきれいで、心配なくマリンスポーツやショッピングが楽しめます。" },
+                        // 安全性の表現を調整
+                        { name: "シンガポール", reason: "マーライオンや未来的な建物があり、動物園やユニバーサルスタジオなどのアトラクションも充実！安心して遊べるきれいな都市です。" },
+                        { name: "韓国 (ソウル)", reason: "短いお休みで、ショッピングと韓国グルメを思い切り楽しめます。" },
+                        { name: "タイ (バンコク)", reason: "安くて美味しいご飯と、きれいなビーチや寺院など、色々な楽しみ方ができます。" }
+                    ];
+                }
+
+                // 3. スコア合計を計算し、合計スコア順にソート (ここで適切な重み付けを行う)
+                uniqueRecommendations.forEach(rec => {
+                    let scoreSum = 0;
+                    // 地域ごとに重み付けロジックを再適用
+                    // アジア (近場, 都市, 予算)
+                    if (rec.name.includes("韓国") || rec.name.includes("台湾") || rec.name.includes("香港") || rec.name.includes("マカオ") || rec.name.includes("マレーシア")) scoreSum = totalScore.near * 3 + totalScore.city * 2 + totalScore.budget * 2 + totalScore.luxury;
+                    // 東南アジア (予算, 期間, 自然, 歴史)
+                    else if (rec.name.includes("タイ") || rec.name.includes("ベトナム") || rec.name.includes("インドネシア") || rec.name.includes("カンボジア")) scoreSum = totalScore.budget * 3 + totalScore.duration * 2 + totalScore.nature * 1.5 + totalScore.history * 2;
+                    // オセアニア (動物, 自然, 安全, 遠方)
+                    else if (rec.name.includes("オーストラリア") || rec.name.includes("ニュージーランド")) scoreSum = totalScore.animal * 3 + totalScore.nature * 2.5 + totalScore.safety * 2 + totalScore.far;
+                    // 北米・ハワイ (都市, 自然, 贅沢, 期間)
+                    else if (rec.name.includes("アメリカ") || rec.name.includes("カナダ") || rec.name.includes("ハワイ")) scoreSum = totalScore.city * 2 + totalScore.nature * 2 + totalScore.luxury * 2 + totalScore.duration * 1.5;
+                    // 中南米 (歴史, 遠方, 動物, 自然)
+                    else if (rec.name.includes("メキシコ") || rec.name.includes("ブラジル") || rec.name.includes("ペルー") || rec.name.includes("ガラパゴス")) scoreSum = totalScore.history * 3 + totalScore.far * 3 + totalScore.animal * 2.5 + totalScore.nature * 2.5;
+                    // ヨーロッパ (遠方, 歴史, ファンタジー, 贅沢, 自然)
+                    else if (rec.name.includes("イタリア") || rec.name.includes("フランス") || rec.name.includes("イギリス") || rec.name.includes("ドイツ") || rec.name.includes("スイス") || rec.name.includes("オーストリア") || rec.name.includes("オランダ") || rec.name.includes("ベルギー") || rec.name.includes("チェコ") || rec.name.includes("ギリシャ") || rec.name.includes("スペイン") || rec.name.includes("ポルトガル") || rec.name.includes("北欧")) scoreSum = totalScore.far * 2.5 + totalScore.history * 3 + totalScore.fantasy * 2 + totalScore.luxury * 1.5 + totalScore.nature;
+                    // 中東・アフリカ (未来, 贅沢, 歴史, 動物, 遠方)
+                    else if (rec.name.includes("シンガポール") || rec.name.includes("ドバイ") || rec.name.includes("カタール") || rec.name.includes("エジプト") || rec.name.includes("南アフリカ")) scoreSum = totalScore.future * 3 + totalScore.luxury * 2.5 + totalScore.history * 2.5 + totalScore.animal * 2.5 + totalScore.far * 2;
+                    // 安全策
+                    else scoreSum = totalScore.city + totalScore.nature + totalScore.history; 
+
+                    rec.finalScore = scoreSum;
+                });
+                
+                uniqueRecommendations.sort((a, b) => b.finalScore - a.finalScore);
+
+
+                // 最終的なリストの最初の4つを返す (バリエーション確保のため)
+                return uniqueRecommendations.slice(0, 4);
+            },
+
+            // --- 結果表示HTML生成 ---
+            renderResult() {
+                const results = this.calculateResult();
+
+                let resultHtml = `
+                    <div class="text-center py-6">
+                        <h2 class="text-3xl font-bold text-blue-600 mb-4">🎉 診断結果が出ました！ 🎉</h2>
+                        <p class="text-xl text-gray-700 mb-8">あなたにおすすめの海外旅行先はこちらです。</p>
+                    </div>
+
+                    <div class="space-y-4">
+                        ${results.map((result, index) => {
+                            let rankLabel = '';
+                            let rankClass = 'border-gray-300 bg-white';
+                            let titleClass = 'text-gray-800';
+
+                            if (index === 0) {
+                                rankLabel = '🏆 第1位';
+                                rankClass = 'rank-1';
+                                titleClass = 'text-amber-700';
+                            } else if (index === 1) {
+                                rankLabel = '🥈 第2位';
+                                rankClass = 'rank-2';
+                                titleClass = 'text-gray-700';
+                            } else if (index === 2) {
+                                rankLabel = '🥉 第3位';
+                                titleClass = 'text-gray-700';
+                            } else {
+                                rankLabel = '✨ 第4候補';
+                                titleClass = 'text-gray-700';
+                            }
+
+                            return `
+                                <div class="p-4 border-2 ${rankClass} rounded-lg shadow-sm">
+                                    <h3 class="text-xl font-extrabold ${titleClass} mb-1">
+                                        ${rankLabel}: ${result.name}
+                                    </h3>
+                                    <p class="text-gray-600 text-sm">${result.reason}</p>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div class="mt-10 text-center">
+                        <p class="text-gray-500 mb-4">もう一度やり直して、他の可能性を探ることもできます。</p>
+                        <button onclick="app.resetQuiz()" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-lg shadow-lg hover:bg-red-600 transition duration-150 ease-in-out">
+                            最初からやり直す
+                        </button>
+                    </div>
+                `;
+                return resultHtml;
+            },
+
+            // --- クイズリセット ---
+            resetQuiz() {
+                this.currentStep = 0;
+                this.answers = [];
+                document.getElementById('navigation-buttons').style.display = 'flex';
+                this.renderStep();
+            }
+        };
+
+        // 初期化実行
+        window.onload = () => {
+            app.init();
+        };
+    </script>
+</body>
+</html>
